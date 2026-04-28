@@ -20,11 +20,12 @@ def estimate_tokens(text: str) -> int:
 class SingleChunker:
     """Creates one chunk per section."""
 
-    def chunk(self, sections: list[Section], _config: ContentTypeConfig) -> list[Chunk]:
+    def chunk(self, sections: list[Section], config: ContentTypeConfig) -> list[Chunk]:
+        """Treat each section as a single chunk."""
         chunks: list[Chunk] = []
 
         for section in sections:
-            text = section.text.strip()
+            text: str = section.text.strip()
 
             if not text:
                 logger.debug("Skipping empty section: %s", section.id)
@@ -54,6 +55,7 @@ class ParagraphChunker:
     _PARAGRAPH_SPLIT_RE: re.Pattern[str] = re.compile(r"\n\s*\n+")
 
     def chunk(self, sections: list[Section], config: ContentTypeConfig) -> list[Chunk]:
+        """Split sections into chunks based on paragraphs, respecting max_tokens and overlap."""
         chunks: list[Chunk] = []
         max_tokens = config.chunking.max_tokens
 
@@ -108,6 +110,7 @@ class ParagraphChunker:
         text: str,
         strategy: str,
     ) -> Chunk:
+        """Helper to build a Chunk with a stable ID."""
         return Chunk(
             id=make_chunk_id(section_id=section.id, ordinal=ordinal, text=text),
             document_id=section.document_id,
@@ -182,6 +185,7 @@ class SectionWindowChunker:
 def get_chunker(
     chunker_name: str,
 ) -> SingleChunker | ParagraphChunker | SectionWindowChunker:
+    """Factory function to get the appropriate chunker based on the name."""
     if chunker_name == "single":
         return SingleChunker()
 

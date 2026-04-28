@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class PlaintextSectioner:
     """Creates one section from the whole document."""
 
-    def section(self, document: Document, _config: ContentTypeConfig) -> list[Section]:
+    def section(self, document: Document, config: ContentTypeConfig) -> list[Section]:
         """Treat the entire document as a single section."""
         text = document.text.strip()
 

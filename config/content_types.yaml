@@ -21,12 +21,11 @@ content_types:
       doc_role: reference
       content_type: technical
 
-  hr_docs:
+  hr_policy:
     source_dir: data/raw/hr_docs
     file_patterns:
-      - '**/*.txt'
-      - '**/*.policy'
-      - '**/*.md'
+      - '*policy*.txt'
+      - '*.policy'
 
     reader: text
     sectioner: policy
@@ -42,7 +41,25 @@ content_types:
     metadata:
       domain: hr
       doc_role: policy
-      content_type: hr_docs
+      content_type: hr_policy
+
+  hr_faq:
+    source_dir: data/raw/hr_docs
+    file_patterns:
+      - '*faq*.txt'
+
+    reader: text
+    sectioner: plaintext
+    chunker: paragraph
+
+    chunking:
+      max_tokens: 250
+      overlap: 0
+
+    metadata:
+      domain: hr
+      doc_role: faq
+      content_type: hr_faq
 
   support:
     source_dir: data/raw/support
