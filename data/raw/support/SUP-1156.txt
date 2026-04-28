@@ -1,0 +1,22 @@
+TICKET ID: SUP-1156
+DATE: 2024-06-08
+CATEGORY: infrastructure
+STATUS: resolved
+PRIORITY: medium
+
+TITLE: Login failures concentrated among subset of users
+
+DESCRIPTION:
+Customer support escalated reports of approximately 200 users unable to log in over a 6-hour period. Affected users could enter credentials and receive a successful authentication response, but were redirected back to the login page on the next request. The session appeared to be lost immediately after creation. The same user could sometimes log in successfully on retry. Users not in the affected set reported no issues.
+
+INVESTIGATION:
+Authentication itself was functioning correctly — credentials validated, tokens issued, password store healthy. The issue was traced to session storage. Sessions are stored in Redis sharded by user ID hash. One Redis shard (shard-3 of 8) was running at 98% memory utilisation and had begun evicting keys under maxmemory-policy allkeys-lru. Sessions for users hashing to shard-3 were being evicted within seconds of creation, causing the immediate logout behaviour.
+
+ROOT CAUSE:
+Shard-3 had grown disproportionately due to a bug in the user-ID hash function introduced in a refactor three months prior. The hash was meant to distribute uniformly across 8 shards but produced a distribution skewed roughly 3:1 toward shard-3. The imbalance went unnoticed because total Redis capacity remained sufficient until a recent user growth spike pushed shard-3 specifically over its limit.
+
+RESOLUTION:
+Immediate mitigation: increased shard-3 memory allocation by 4x to halt evictions. Permanent fix: corrected the hash function and ran a re-sharding job to redistribute existing session keys evenly across all 8 shards. The re-sharding ran during a low-traffic window and forced affected users to re-authenticate once.
+
+PREVENTION:
+Added per-shard memory utilisation alerts at 75% and 90% thresholds. Added a daily job that reports shard distribution skew and pages on-call if any shard holds more than 1.5x the median. Added an integration test verifying the hash function produces uniform distribution across shard counts of 4, 8, and 16.

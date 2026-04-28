@@ -1,0 +1,64 @@
+content_types:
+  technical:
+    source_dir: data/raw/technical
+    file_patterns:
+      - '**/*.md'
+
+    reader: text
+    sectioner: markdown
+    chunker: section_window
+
+    sectioning:
+      markdown_heading_level: 2
+      preserve_code_blocks: true
+
+    chunking:
+      max_tokens: 400
+      overlap: 0
+
+    metadata:
+      domain: technical
+      doc_role: reference
+      content_type: technical
+
+  hr_docs:
+    source_dir: data/raw/hr_docs
+    file_patterns:
+      - '**/*.txt'
+      - '**/*.policy'
+      - '**/*.md'
+
+    reader: text
+    sectioner: policy
+    chunker: section_window
+
+    sectioning:
+      preserve_preamble: true
+
+    chunking:
+      max_tokens: 300
+      overlap: 50
+
+    metadata:
+      domain: hr
+      doc_role: policy
+      content_type: hr_docs
+
+  support:
+    source_dir: data/raw/support
+    file_patterns:
+      - '**/*.txt'
+      - '**/*.md'
+
+    reader: text
+    sectioner: plaintext
+    chunker: single
+
+    chunking:
+      max_tokens: 500
+      overlap: 0
+
+    metadata:
+      domain: support
+      doc_role: incident
+      content_type: support

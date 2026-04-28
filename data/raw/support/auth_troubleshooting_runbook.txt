@@ -1,0 +1,33 @@
+AUTHENTICATION TROUBLESHOOTING RUNBOOK
+Owner: Platform Team
+Last Reviewed: 2024-09-01
+
+This runbook is the first stop for on-call engineers responding to authentication-related incidents. Work through the symptom sections in order. Each section lists what to check, what indicates that path, and where to escalate or reference past incidents.
+
+SYMPTOM 1: All users see HTTP 401 on login
+This is a total auth outage. Highest priority.
+Check first: is the auth service itself running? Hit /health on the auth service directly. If down, escalate to Platform on-call immediately.
+If healthy: check the password store database connection. Look for "connection refused" or "read-only" errors in auth service logs. A common past cause was the password store write URL pointing at a read replica (see SUP-1042).
+If database is healthy: check the JWT signing keyring. Look for "kid not found" errors in logs. Recent key rotations are the usual cause.
+
+SYMPTOM 2: Some users can log in, others cannot
+This pattern indicates a partial failure rather than a service outage.
+Check first: is the failure correlated with which pod served the request? Aggregate failure logs by pod ID. If one pod or one deployment shows disproportionate failures, the keyring may be stale on that subset (see SUP-1108). Mitigation: rolling restart of the affected deployment.
+If pod distribution looks uniform: check whether the failure correlates with user ID. Pull a sample of failing user IDs and check their session storage shard. If failing users cluster on one Redis shard, you have a session storage problem (see SUP-1156).
+If neither pod nor shard correlates: check for IP-based rate limiting or geo-blocking that may have been recently changed.
+
+SYMPTOM 3: Login succeeds but session is immediately lost
+The user authenticates, gets redirected to the app, and is bounced back to the login page on the next request.
+This is almost always session storage. Check Redis health, especially memory utilisation and eviction counters. A shard at >90% memory under allkeys-lru policy will evict sessions within seconds (see SUP-1156).
+Less common: check for cookie domain mismatches if the issue started after a recent frontend deploy. The session cookie may be being set on the wrong domain.
+
+SYMPTOM 4: Password reset flow appears broken
+Distinguish two sub-cases before investigating.
+Sub-case A: user submits reset request, receives email, clicks link, enters new password, but cannot log in with the new password. This is the reset-write path. Check that the new password hash is being written to the primary database, not a replica (see SUP-1042). Also check that the login endpoint reads from the same database the reset writes to.
+Sub-case B: user submits reset request, never receives email. This is the email delivery path, not the auth path. Check SES sending logs for ThrottlingException or other delivery errors (see SUP-1203). Auth service logs will show the reset request as successful even when email delivery failed.
+
+SYMPTOM 5: Token refresh fails but initial login works
+Check JWT signing keyring first; this is usually the same root cause as Symptom 1 sub-cases (see SUP-1108). Refresh tokens are validated against the same keyring as access tokens.
+
+ESCALATION
+If none of the above paths identifies the cause within 30 minutes, page Platform on-call. Capture: failure rate, affected user IDs (sample), pod distribution of failures, recent deploys, recent infra changes, and Redis shard memory state. Attach this to the incident channel before escalating.

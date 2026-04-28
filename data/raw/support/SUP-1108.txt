@@ -1,0 +1,22 @@
+TICKET ID: SUP-1108
+DATE: 2024-04-22
+CATEGORY: authentication
+STATUS: resolved
+PRIORITY: high
+
+TITLE: Intermittent login failures following v2.1.0 deploy
+
+DESCRIPTION:
+Following the v2.1.0 production deploy, approximately 30% of login attempts began failing with HTTP 401 responses. Users who were already logged in remained authenticated, but new login attempts and token refresh attempts failed inconsistently. Failures appeared to correlate with which pod served the request.
+
+INVESTIGATION:
+Initial suspicion was a database issue similar to SUP-1042, but the password store was confirmed correct and the login endpoint was reading from the primary database. Examination of pod logs showed JWT signature validation failures, specifically "kid not found in keyring" errors. The signing key had been rotated as part of v2.1.0, but pods deployed before the rotation completed had cached the previous keyring at startup and never refreshed it.
+
+ROOT CAUSE:
+The JWT signing keyring is loaded once at pod startup and held in memory. Key rotation publishes new keys to the keyring service but does not signal running pods to refresh. Pods deployed between the rotation start and rotation completion ended up with a partial keyring containing only the old key. When a token signed with the new key reached an old-keyring pod, validation failed.
+
+RESOLUTION:
+Rolling restart of the affected deployment forced all pods to reload the keyring from scratch, picking up both old and new keys. Login success rate returned to baseline within 4 minutes of restart completion.
+
+PREVENTION:
+Added a periodic keyring refresh (every 5 minutes) so pods pick up rotations without requiring restart. Added a startup readiness check that fails the pod if the keyring contains fewer than the expected number of active keys. Updated the deploy runbook to require a rolling restart following any signing key rotation until the periodic refresh has been verified in production for 30 days.

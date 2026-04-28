@@ -1,0 +1,22 @@
+TICKET ID: SUP-1203
+DATE: 2024-08-15
+CATEGORY: email-delivery
+STATUS: resolved
+PRIORITY: medium
+
+TITLE: Password reset emails not delivered to subset of users
+
+DESCRIPTION:
+Users reported requesting a password reset and never receiving the reset email. The application showed the standard "if an account exists, an email has been sent" confirmation, but no email arrived in the user's inbox or spam folder. Affected users were able to log in normally if they remembered their existing password, ruling out account state issues. The password reset flow itself completed successfully on the backend; only email delivery failed.
+
+INVESTIGATION:
+Backend logs showed password reset requests reaching the email service and being submitted to AWS SES. SES responses indicated successful submission for some emails but ThrottlingException errors for others, particularly during peak hours. The SES sending quota was being hit for our region, and submissions over the per-second send rate were rejected. Rejected submissions were logged but not retried.
+
+ROOT CAUSE:
+Two issues compounded: (1) our SES sending rate had been provisioned for an earlier user base size and not increased as the user base grew; (2) the email service had no retry logic for ThrottlingException, so any rate-limited email was silently dropped. The combination meant that during peak hours roughly 8% of password reset emails were never sent.
+
+RESOLUTION:
+Immediate mitigation: requested an SES quota increase from AWS, approved within 4 hours. Added exponential-backoff retry logic to the email service for ThrottlingException specifically (other SES errors are not retried). Affected users from the prior 48 hours were proactively sent a new password reset email outside peak hours.
+
+PREVENTION:
+Added monitoring for SES throttling errors with alerting at any rate above 0.1% of email volume. Added a quarterly review of SES sending quotas against projected user growth. Made retry logic the default for all transient SES errors, with a maximum of 3 attempts and dead-letter logging for emails that exhaust retries.
