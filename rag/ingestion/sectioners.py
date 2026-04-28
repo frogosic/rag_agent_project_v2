@@ -152,6 +152,98 @@ class PolicySectioner:
         )
 
 
+class FaqSectioner:
+    """Splits FAQ-style documents into one section per Q/A pair.
+
+    Recognizes repeated blocks like:
+
+    Q: Question?
+    A: Answer...
+    """
+
+    _QUESTION_RE = re.compile(r"^Q:\s*(.+?)\s*$", re.MULTILINE)
+
+    def section(self, document: Document, config: ContentTypeConfig) -> list[Section]:
+        """Split the document into sections based on FAQ-style Q/A pairs."""
+        _ = config
+
+        raw = document.text.strip()
+        matches = list(self._QUESTION_RE.finditer(raw))
+
+        if not matches:
+            logger.warning(
+                "No FAQ questions detected; falling back to plaintext sectioning: %s",
+                document.source_path,
+            )
+            return PlaintextSectioner().section(document, config)
+
+        sections: list[Section] = []
+        ordinal = 0
+
+        preamble = raw[: matches[0].start()].strip()
+        if preamble:
+            sections.append(
+                self._build_section(
+                    document=document,
+                    ordinal=ordinal,
+                    heading="FAQ Preamble",
+                    text=preamble,
+                )
+            )
+            ordinal += 1
+
+        for index, match in enumerate(matches):
+            question = match.group(1).strip()
+
+            block_start = match.start()
+            block_end = (
+                matches[index + 1].start() if index + 1 < len(matches) else len(raw)
+            )
+            block_text = raw[block_start:block_end].strip()
+
+            if not block_text:
+                continue
+
+            sections.append(
+                self._build_section(
+                    document=document,
+                    ordinal=ordinal,
+                    heading=question,
+                    text=block_text,
+                )
+            )
+            ordinal += 1
+
+        return sections
+
+    def _build_section(
+        self,
+        document: Document,
+        ordinal: int,
+        heading: str | None,
+        text: str,
+    ) -> Section:
+        return Section(
+            id=make_section_id(
+                document_id=document.id,
+                ordinal=ordinal,
+                heading=heading,
+                text=text,
+            ),
+            document_id=document.id,
+            ordinal=ordinal,
+            heading=heading,
+            level=None,
+            text=text,
+            metadata={
+                **document.metadata,
+                "section_heading": heading,
+                "section_level": None,
+                "section_ordinal": ordinal,
+            },
+        )
+
+
 class MarkdownSectioner:
     """Splits Markdown documents into heading-based sections."""
 
@@ -308,6 +400,9 @@ def get_sectioner(sectioner_name: str):
 
     if sectioner_name == "policy":
         return PolicySectioner()
+
+    if sectioner_name == "faq":
+        return FaqSectioner()
 
     if sectioner_name == "markdown":
         return MarkdownSectioner()

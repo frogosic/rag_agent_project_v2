@@ -50,7 +50,7 @@ content_types:
 
     reader: text
     sectioner: plaintext
-    chunker: paragraph
+    chunker: single
 
     chunking:
       max_tokens: 250
@@ -61,11 +61,10 @@ content_types:
       doc_role: faq
       content_type: hr_faq
 
-  support:
+  support_ticket:
     source_dir: data/raw/support
     file_patterns:
-      - '**/*.txt'
-      - '**/*.md'
+      - 'SUP-*.txt'
 
     reader: text
     sectioner: plaintext
@@ -78,4 +77,22 @@ content_types:
     metadata:
       domain: support
       doc_role: incident
-      content_type: support
+      content_type: support_ticket
+
+  support_runbook:
+    source_dir: data/raw/support
+    file_patterns:
+      - '*runbook*.txt'
+
+    reader: text
+    sectioner: plaintext
+    chunker: paragraph
+
+    chunking:
+      max_tokens: 300
+      overlap: 0
+
+    metadata:
+      domain: support
+      doc_role: runbook
+      content_type: support_runbook

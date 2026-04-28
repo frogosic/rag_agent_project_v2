@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 ReaderType = Literal["text"]
-SectionerType = Literal["markdown", "plaintext", "policy"]
+SectionerType = Literal["markdown", "plaintext", "policy", "faq"]
 ChunkerType = Literal["single", "paragraph", "section_window"]
 
 
