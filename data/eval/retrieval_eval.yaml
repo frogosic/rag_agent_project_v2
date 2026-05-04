@@ -1,0 +1,83 @@
+cases:
+  - id: eval_001_refresh_tokens
+    query: 'How do refresh tokens work?'
+    category: technical_concept
+
+    expected:
+      sources_any:
+        - session_management.md
+      chunk_ids_any:
+        - chk_sec_doc_technical_session_management_0e083410502d_0002_refresh-flow_81b340b639ec_0000_81b340b639ec
+
+    notes: 'Should retrieve the refresh flow section.'
+
+  - id: eval_002_medical_leave_eligibility
+    query: 'Who is eligible for medical leave?'
+    category: hr_faq
+
+    expected:
+      sources_any:
+        - medical_leave_faq.txt
+      chunk_ids_any:
+        - chk_sec_doc_hr_faq_medical_leave_faq_1ad0567e7588_0000_section_a01d60778e8c_0000_a01d60778e8c
+
+    checks:
+      require_rank_lte: 1
+
+    anti_signals:
+      check_top_k: 3
+      sources:
+        - parental_leave_policy.txt
+        - sabbatical_policy.txt
+        - bereavment_leave_policy.txt
+
+    notes: 'Should prefer medical leave FAQ over generic leave eligibility sections.'
+
+  - id: eval_003_support_ticket_exact_id
+    query: 'What happened in SUP-1108?'
+    category: exact_identifier
+
+    expected:
+      sources_any:
+        - SUP-1108.txt
+      chunk_ids_any:
+        - chk_sec_doc_support_ticket_SUP-1108_4fbbe691a539_0000_section_0f516ad2f262_0000_0f516ad2f262
+
+    warnings:
+      min_top_score: 0.4
+
+    notes: 'Dense retrieval may be weak here; exact ticket IDs are a lexical case.'
+
+  - id: eval_004_auth_troubleshooting
+    query: 'How do I troubleshoot authentication failures?'
+    category: support_runbook
+
+    expected:
+      sources_any:
+        - auth_troubleshooting_runbook.txt
+      chunk_ids_any:
+        - chk_sec_doc_support_runbook_auth_troubleshooting_runbook_3fa78cb619c0_0000_section_4b2e6512ce9b_0000_4b2e6512ce9b
+
+    notes: 'Should retrieve the authentication troubleshooting runbook.'
+
+  - id: eval_005_access_token_ttl
+    query: 'What is the access token TTL?'
+    category: technical_fact
+
+    expected:
+      sources_any:
+        - auth_configuration.md
+        - auth_api_reference.md
+
+    notes: 'Accept either config TTL policy or API reference if it contains the TTL detail.'
+
+  - id: eval_006_exact_endpoint_refresh
+    query: 'POST /auth/refresh'
+    category: exact_endpoint
+
+    expected:
+      sources_any:
+        - session_management.md
+        - auth_api_reference.md
+
+    notes: 'Dense retrieval may underperform on exact endpoint syntax.'

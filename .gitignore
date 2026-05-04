@@ -20,3 +20,4 @@ build/
 *.whl
 *.tar.gz
 *.zip
+retrieval_eval_dense.json
