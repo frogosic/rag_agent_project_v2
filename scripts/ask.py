@@ -1,11 +1,14 @@
 import argparse
 import logging
+from pathlib import Path
 from typing import Any
 
 from rag.application.rag_service import RAGService
 from rag.application.run_store import RunStore
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_RUNS_DIR = Path("data/runs/ask_runs")
 
 
 def parse_args() -> argparse.Namespace:
