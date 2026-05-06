@@ -3,7 +3,14 @@ import uuid
 from typing import Any
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    VectorParams,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -126,10 +133,26 @@ class QdrantStore:
             "metadata": metadata,
         }
 
+    @staticmethod
+    def _build_filter(filters: dict[str, Any] | None) -> Filter | None:
+        if not filters:
+            return None
+
+        conditions = [
+            FieldCondition(
+                key=key,
+                match=MatchValue(value=value),
+            )
+            for key, value in filters.items()
+        ]
+
+        return Filter(must=conditions)  # type: ignore
+
     def search(
         self,
         query_vector: list[float],
         limit: int = 5,
+        filters: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         if len(query_vector) != self.vector_size:
             raise ValueError(
@@ -137,11 +160,14 @@ class QdrantStore:
                 f"Expected {self.vector_size}, got {len(query_vector)}."
             )
 
+        query_filter = self._build_filter(filters)
+
         results = self.client.query_points(
             collection_name=self.collection_name,
             query=query_vector,
             using=self.vector_name,
             limit=limit,
+            query_filter=query_filter,
             with_payload=True,
             with_vectors=False,
         )

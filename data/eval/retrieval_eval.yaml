@@ -21,6 +21,10 @@ cases:
       chunk_ids_any:
         - chk_sec_doc_hr_faq_medical_leave_faq_1ad0567e7588_0000_section_a01d60778e8c_0000_a01d60778e8c
 
+    filters:
+      domain: hr
+      doc_role: faq
+
     checks:
       require_rank_lte: 1
 

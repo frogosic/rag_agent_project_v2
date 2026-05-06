@@ -1,6 +1,8 @@
 .env
+.qdrant
 venv
 /data/processed/
+/data/runs/ask_runs/
 __pycache__/
 *.pyc
 *.pyo
@@ -21,3 +23,4 @@ build/
 *.tar.gz
 *.zip
 retrieval_eval_dense.json
+

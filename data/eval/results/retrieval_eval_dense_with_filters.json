@@ -1,0 +1,324 @@
+{
+  "created_at": "2026-05-06T21:15:59.110382+00:00",
+  "retrieval_mode": "dense_with_optional_filters",
+  "top_k": 5,
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "pass_rate": 100.0,
+    "expected_misses": 0,
+    "anti_signal_failures": 0,
+    "rank_failures": 0,
+    "avg_source_rank": 1.0,
+    "avg_chunk_rank": 1.0,
+    "categories": {
+      "technical_concept": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "expected_misses": 0,
+        "anti_signal_failures": 0,
+        "rank_failures": 0,
+        "pass_rate": 100.0
+      },
+      "hr_faq": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "expected_misses": 0,
+        "anti_signal_failures": 0,
+        "rank_failures": 0,
+        "pass_rate": 100.0
+      },
+      "exact_identifier": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "expected_misses": 0,
+        "anti_signal_failures": 0,
+        "rank_failures": 0,
+        "pass_rate": 100.0
+      },
+      "support_runbook": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "expected_misses": 0,
+        "anti_signal_failures": 0,
+        "rank_failures": 0,
+        "pass_rate": 100.0
+      },
+      "technical_fact": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "expected_misses": 0,
+        "anti_signal_failures": 0,
+        "rank_failures": 0,
+        "pass_rate": 100.0
+      },
+      "exact_endpoint": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "expected_misses": 0,
+        "anti_signal_failures": 0,
+        "rank_failures": 0,
+        "pass_rate": 100.0
+      }
+    },
+    "warnings": 1
+  },
+  "results": [
+    {
+      "id": "eval_001_refresh_tokens",
+      "query": "How do refresh tokens work?",
+      "category": "technical_concept",
+      "filters": {},
+      "passed": true,
+      "source_hit": true,
+      "chunk_hit": true,
+      "source_rank": 1,
+      "chunk_rank": 1,
+      "expected_sources": [
+        "session_management.md"
+      ],
+      "expected_chunk_ids": [
+        "chk_sec_doc_technical_session_management_0e083410502d_0002_refresh-flow_81b340b639ec_0000_81b340b639ec"
+      ],
+      "result_sources": [
+        "session_management.md",
+        "auth_api_reference.md",
+        "session_management.md",
+        "auth_configuration.md",
+        "auth_overview.md"
+      ],
+      "result_chunk_ids": [
+        "chk_sec_doc_technical_session_management_0e083410502d_0002_refresh-flow_81b340b639ec_0000_81b340b639ec",
+        "chk_sec_doc_technical_auth_api_reference_5d033089ede6_0001_post-auth-login_24449efd25be_0000_24449efd25be",
+        "chk_sec_doc_technical_session_management_0e083410502d_0004_token-revocation_c4a686c2cf61_0000_c4a686c2cf61",
+        "chk_sec_doc_technical_auth_configuration_42e2ce3c8ea4_0002_token-ttl-policy_41266f1d2a9f_0000_41266f1d2a9f",
+        "chk_sec_doc_technical_auth_overview_b7627b21faee_0002_supported-authentication-methods_c0c85cc7bf46_0000_c0c85cc7bf46"
+      ],
+      "top_result_source": "session_management.md",
+      "top_result_chunk_id": "chk_sec_doc_technical_session_management_0e083410502d_0002_refresh-flow_81b340b639ec_0000_81b340b639ec",
+      "top_score": 0.6825126,
+      "warnings": [],
+      "expected_hit": true,
+      "anti_signal_hit": false,
+      "matched_anti_signal_sources": [],
+      "anti_signal_check_top_k": null,
+      "expected_rank": 1,
+      "require_rank_lte": null,
+      "rank_requirement_met": true
+    },
+    {
+      "id": "eval_002_medical_leave_eligibility",
+      "query": "Who is eligible for medical leave?",
+      "category": "hr_faq",
+      "filters": {
+        "domain": "hr",
+        "doc_role": "faq"
+      },
+      "passed": true,
+      "source_hit": true,
+      "chunk_hit": true,
+      "source_rank": 1,
+      "chunk_rank": 1,
+      "expected_sources": [
+        "medical_leave_faq.txt"
+      ],
+      "expected_chunk_ids": [
+        "chk_sec_doc_hr_faq_medical_leave_faq_1ad0567e7588_0000_section_a01d60778e8c_0000_a01d60778e8c"
+      ],
+      "result_sources": [
+        "medical_leave_faq.txt",
+        "wellness_benefits_faq.txt"
+      ],
+      "result_chunk_ids": [
+        "chk_sec_doc_hr_faq_medical_leave_faq_1ad0567e7588_0000_section_a01d60778e8c_0000_a01d60778e8c",
+        "chk_sec_doc_hr_faq_wellness_benefits_faq_89cad14ef316_0000_section_5f48ced00bd1_0000_5f48ced00bd1"
+      ],
+      "top_result_source": "medical_leave_faq.txt",
+      "top_result_chunk_id": "chk_sec_doc_hr_faq_medical_leave_faq_1ad0567e7588_0000_section_a01d60778e8c_0000_a01d60778e8c",
+      "top_score": 0.5964454,
+      "warnings": [],
+      "expected_hit": true,
+      "anti_signal_hit": false,
+      "matched_anti_signal_sources": [],
+      "anti_signal_check_top_k": 3,
+      "expected_rank": 1,
+      "require_rank_lte": 1,
+      "rank_requirement_met": true
+    },
+    {
+      "id": "eval_003_support_ticket_exact_id",
+      "query": "What happened in SUP-1108?",
+      "category": "exact_identifier",
+      "filters": {},
+      "passed": true,
+      "source_hit": true,
+      "chunk_hit": true,
+      "source_rank": 1,
+      "chunk_rank": 1,
+      "expected_sources": [
+        "SUP-1108.txt"
+      ],
+      "expected_chunk_ids": [
+        "chk_sec_doc_support_ticket_SUP-1108_4fbbe691a539_0000_section_0f516ad2f262_0000_0f516ad2f262"
+      ],
+      "result_sources": [
+        "SUP-1108.txt",
+        "SUP-1042.txt",
+        "SUP-1156.txt",
+        "SUP-1203.txt",
+        "auth_api_reference.md"
+      ],
+      "result_chunk_ids": [
+        "chk_sec_doc_support_ticket_SUP-1108_4fbbe691a539_0000_section_0f516ad2f262_0000_0f516ad2f262",
+        "chk_sec_doc_support_ticket_SUP-1042_e673dcda11bb_0000_section_fd795200f2da_0000_fd795200f2da",
+        "chk_sec_doc_support_ticket_SUP-1156_b9a409c9660f_0000_section_46a7c37e9419_0000_46a7c37e9419",
+        "chk_sec_doc_support_ticket_SUP-1203_ebbdd693f7a2_0000_section_f29c7f63a4b9_0000_f29c7f63a4b9",
+        "chk_sec_doc_technical_auth_api_reference_5d033089ede6_0003_post-auth-logout_f8447a824b85_0000_f8447a824b85"
+      ],
+      "top_result_source": "SUP-1108.txt",
+      "top_result_chunk_id": "chk_sec_doc_support_ticket_SUP-1108_4fbbe691a539_0000_section_0f516ad2f262_0000_0f516ad2f262",
+      "top_score": 0.33096403,
+      "warnings": [
+        "top_score 0.3310 is below min_top_score 0.4000"
+      ],
+      "expected_hit": true,
+      "anti_signal_hit": false,
+      "matched_anti_signal_sources": [],
+      "anti_signal_check_top_k": null,
+      "expected_rank": 1,
+      "require_rank_lte": null,
+      "rank_requirement_met": true
+    },
+    {
+      "id": "eval_004_auth_troubleshooting",
+      "query": "How do I troubleshoot authentication failures?",
+      "category": "support_runbook",
+      "filters": {},
+      "passed": true,
+      "source_hit": true,
+      "chunk_hit": true,
+      "source_rank": 1,
+      "chunk_rank": 1,
+      "expected_sources": [
+        "auth_troubleshooting_runbook.txt"
+      ],
+      "expected_chunk_ids": [
+        "chk_sec_doc_support_runbook_auth_troubleshooting_runbook_3fa78cb619c0_0000_section_4b2e6512ce9b_0000_4b2e6512ce9b"
+      ],
+      "result_sources": [
+        "auth_troubleshooting_runbook.txt",
+        "auth_troubleshooting_runbook.txt",
+        "auth_overview.md",
+        "auth_api_reference.md",
+        "SUP-1108.txt"
+      ],
+      "result_chunk_ids": [
+        "chk_sec_doc_support_runbook_auth_troubleshooting_runbook_3fa78cb619c0_0000_section_4b2e6512ce9b_0000_4b2e6512ce9b",
+        "chk_sec_doc_support_runbook_auth_troubleshooting_runbook_3fa78cb619c0_0000_section_4b2e6512ce9b_0001_3807be5937c0",
+        "chk_sec_doc_technical_auth_overview_b7627b21faee_0004_failure-modes_fff8dcf4106f_0000_fff8dcf4106f",
+        "chk_sec_doc_technical_auth_api_reference_5d033089ede6_0005_error-codes_0bb29cb91589_0000_0bb29cb91589",
+        "chk_sec_doc_support_ticket_SUP-1108_4fbbe691a539_0000_section_0f516ad2f262_0000_0f516ad2f262"
+      ],
+      "top_result_source": "auth_troubleshooting_runbook.txt",
+      "top_result_chunk_id": "chk_sec_doc_support_runbook_auth_troubleshooting_runbook_3fa78cb619c0_0000_section_4b2e6512ce9b_0000_4b2e6512ce9b",
+      "top_score": 0.62837046,
+      "warnings": [],
+      "expected_hit": true,
+      "anti_signal_hit": false,
+      "matched_anti_signal_sources": [],
+      "anti_signal_check_top_k": null,
+      "expected_rank": 1,
+      "require_rank_lte": null,
+      "rank_requirement_met": true
+    },
+    {
+      "id": "eval_005_access_token_ttl",
+      "query": "What is the access token TTL?",
+      "category": "technical_fact",
+      "filters": {},
+      "passed": true,
+      "source_hit": true,
+      "chunk_hit": false,
+      "source_rank": 1,
+      "chunk_rank": null,
+      "expected_sources": [
+        "auth_api_reference.md",
+        "auth_configuration.md"
+      ],
+      "expected_chunk_ids": [],
+      "result_sources": [
+        "auth_configuration.md",
+        "auth_configuration.md",
+        "auth_api_reference.md",
+        "session_management.md",
+        "session_management.md"
+      ],
+      "result_chunk_ids": [
+        "chk_sec_doc_technical_auth_configuration_42e2ce3c8ea4_0002_token-ttl-policy_41266f1d2a9f_0000_41266f1d2a9f",
+        "chk_sec_doc_technical_auth_configuration_42e2ce3c8ea4_0001_environment-variables_a7114558f2a4_0000_a7114558f2a4",
+        "chk_sec_doc_technical_auth_api_reference_5d033089ede6_0000_section_31b4c9fa9e1b_0000_31b4c9fa9e1b",
+        "chk_sec_doc_technical_session_management_0e083410502d_0001_session-model_f00068ff3c30_0000_f00068ff3c30",
+        "chk_sec_doc_technical_session_management_0e083410502d_0000_section_66b5595c7cb8_0000_66b5595c7cb8"
+      ],
+      "top_result_source": "auth_configuration.md",
+      "top_result_chunk_id": "chk_sec_doc_technical_auth_configuration_42e2ce3c8ea4_0002_token-ttl-policy_41266f1d2a9f_0000_41266f1d2a9f",
+      "top_score": 0.6109705,
+      "warnings": [],
+      "expected_hit": true,
+      "anti_signal_hit": false,
+      "matched_anti_signal_sources": [],
+      "anti_signal_check_top_k": null,
+      "expected_rank": 1,
+      "require_rank_lte": null,
+      "rank_requirement_met": true
+    },
+    {
+      "id": "eval_006_exact_endpoint_refresh",
+      "query": "POST /auth/refresh",
+      "category": "exact_endpoint",
+      "filters": {},
+      "passed": true,
+      "source_hit": true,
+      "chunk_hit": false,
+      "source_rank": 1,
+      "chunk_rank": null,
+      "expected_sources": [
+        "auth_api_reference.md",
+        "session_management.md"
+      ],
+      "expected_chunk_ids": [],
+      "result_sources": [
+        "auth_api_reference.md",
+        "auth_overview.md",
+        "auth_api_reference.md",
+        "auth_api_reference.md",
+        "session_management.md"
+      ],
+      "result_chunk_ids": [
+        "chk_sec_doc_technical_auth_api_reference_5d033089ede6_0001_post-auth-login_24449efd25be_0000_24449efd25be",
+        "chk_sec_doc_technical_auth_overview_b7627b21faee_0002_supported-authentication-methods_c0c85cc7bf46_0000_c0c85cc7bf46",
+        "chk_sec_doc_technical_auth_api_reference_5d033089ede6_0000_section_31b4c9fa9e1b_0000_31b4c9fa9e1b",
+        "chk_sec_doc_technical_auth_api_reference_5d033089ede6_0003_post-auth-logout_f8447a824b85_0000_f8447a824b85",
+        "chk_sec_doc_technical_session_management_0e083410502d_0002_refresh-flow_81b340b639ec_0000_81b340b639ec"
+      ],
+      "top_result_source": "auth_api_reference.md",
+      "top_result_chunk_id": "chk_sec_doc_technical_auth_api_reference_5d033089ede6_0001_post-auth-login_24449efd25be_0000_24449efd25be",
+      "top_score": 0.5943545,
+      "warnings": [],
+      "expected_hit": true,
+      "anti_signal_hit": false,
+      "matched_anti_signal_sources": [],
+      "anti_signal_check_top_k": null,
+      "expected_rank": 1,
+      "require_rank_lte": null,
+      "rank_requirement_met": true
+    }
+  ]
+}

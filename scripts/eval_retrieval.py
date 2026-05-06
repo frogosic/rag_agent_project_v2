@@ -13,7 +13,7 @@ from rag.indexing.qdrant_store import QdrantStore
 logger = logging.getLogger(__name__)
 
 DEFAULT_EVAL_PATH = Path("data/eval/retrieval_eval.yaml")
-DEFAULT_RESULTS_PATH = Path("data/eval/results/retrieval_eval_dense.json")
+DEFAULT_RESULTS_PATH = Path("data/eval/results/retrieval_eval_dense_with_filters.json")
 
 
 def parse_args() -> argparse.Namespace:
@@ -162,6 +162,7 @@ def evaluate_case(
     anti_signals = case.get("anti_signals", {}) or {}
     anti_signal_check_top_k = anti_signals.get("check_top_k")
     warnings_config = case.get("warnings", {}) or {}
+    filters = case.get("filters") or {}
     min_top_score = warnings_config.get("min_top_score")
 
     checks = case.get("checks", {}) or {}
@@ -225,6 +226,7 @@ def evaluate_case(
         "id": case["id"],
         "query": case["query"],
         "category": case.get("category"),
+        "filters": filters,
         "passed": passed,
         "source_hit": source_hit,
         "chunk_hit": chunk_hit,
@@ -339,6 +341,7 @@ def log_case_result(result: dict[str, Any]) -> None:
     logger.info("[%s] %s", status, result["id"])
     logger.info("query: %s", result["query"])
     logger.info("category: %s", result["category"])
+    logger.info("filters: %s", result["filters"])
     logger.info("top_score: %s", result["top_score"])
     logger.info("top_source: %s", result["top_result_source"])
     logger.info("source_hit: %s", result["source_hit"])
@@ -450,9 +453,12 @@ def main() -> None:
 
         query_vector = embedding_service.embed_text(case["query"])
 
+        filters = case.get("filters")
+
         search_results = store.search(
             query_vector=query_vector,
             limit=args.top_k,
+            filters=filters,
         )
 
         eval_result = evaluate_case(case, search_results)
@@ -466,7 +472,7 @@ def main() -> None:
         path=args.results_path,
         summary=summary,
         results=eval_results,
-        retrieval_mode="dense",
+        retrieval_mode="dense_with_optional_filters",
         top_k=args.top_k,
     )
 
