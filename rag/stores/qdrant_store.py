@@ -1,8 +1,10 @@
 import logging
 import uuid
-from typing import Any
+from typing import Any, List
 
 from qdrant_client import QdrantClient
+from qdrant_client.conversions.common_types import QueryResponse
+from qdrant_client.http.models.models import CollectionDescription
 from qdrant_client.models import (
     Distance,
     FieldCondition,
@@ -29,9 +31,9 @@ class QdrantStore:
         vector_size: int = DEFAULT_VECTOR_SIZE,
     ) -> None:
         self.client = QdrantClient(url=url)
-        self.collection_name = collection_name
-        self.vector_name = vector_name
-        self.vector_size = vector_size
+        self.collection_name: str = collection_name
+        self.vector_name: str = vector_name
+        self.vector_size: int = vector_size
 
     def recreate_collection(self) -> None:
         """
@@ -63,14 +65,14 @@ class QdrantStore:
 
     def upsert_embedded_chunks(
         self,
-        embedded_chunks: list[dict[str, Any]],
+        embedded_chunks: List[dict[str, Any]],
         batch_size: int = 64,
     ) -> int:
         total = 0
 
         for start in range(0, len(embedded_chunks), batch_size):
-            batch = embedded_chunks[start : start + batch_size]
-            points = [self._chunk_to_point(chunk) for chunk in batch]
+            batch: List[dict[str, Any]] = embedded_chunks[start : start + batch_size]
+            points: List[PointStruct] = [self._chunk_to_point(chunk) for chunk in batch]
 
             self.client.upsert(
                 collection_name=self.collection_name,
@@ -81,6 +83,26 @@ class QdrantStore:
             logger.info("Upserted %s/%s chunks", total, len(embedded_chunks))
 
         return total
+
+    def collection_exists(self) -> bool:
+        """Return whether the configured Qdrant collection exists."""
+        collections: List[CollectionDescription] = (
+            self.client.get_collections().collections
+        )
+        return any(
+            collection.name == self.collection_name for collection in collections
+        )
+
+    def readiness_check(self) -> dict[str, Any]:
+        """Check whether Qdrant is reachable and the collection exists."""
+        collection_exists: bool = self.collection_exists()
+
+        return {
+            "qdrant_reachable": True,
+            "collection_name": self.collection_name,
+            "collection_exists": collection_exists,
+            "ready": collection_exists,
+        }
 
     def _chunk_to_point(self, chunk: dict[str, Any]) -> PointStruct:
         chunk_id = chunk["id"]
@@ -138,7 +160,7 @@ class QdrantStore:
         if not filters:
             return None
 
-        conditions = [
+        conditions: List[FieldCondition] = [
             FieldCondition(
                 key=key,
                 match=MatchValue(value=value),
@@ -160,9 +182,9 @@ class QdrantStore:
                 f"Expected {self.vector_size}, got {len(query_vector)}."
             )
 
-        query_filter = self._build_filter(filters)
+        query_filter: Filter | None = self._build_filter(filters)
 
-        results = self.client.query_points(
+        results: QueryResponse = self.client.query_points(
             collection_name=self.collection_name,
             query=query_vector,
             using=self.vector_name,

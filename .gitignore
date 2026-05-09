@@ -1,5 +1,6 @@
 .env
 .qdrant
+*.sqlite
 venv
 /data/processed/
 /data/runs/ask_runs/

@@ -1,12 +1,33 @@
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class AskRequest(BaseModel):
-    query: str = Field(..., min_length=1)
-    top_k: int = Field(default=5, ge=1, le=20)
-    filters: dict[str, Any] = Field(default_factory=dict)
+    query: str = Field(
+        min_length=1,
+        description="User question to answer using retrieved context.",
+    )
+    top_k: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Maximum number of chunks to retrieve.",
+    )
+    filters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Optional metadata filters applied during retrieval.",
+    )
+
+    @field_validator("query")
+    @classmethod
+    def validate_query(cls, value: str) -> str:
+        normalized = value.strip()
+
+        if not normalized:
+            raise ValueError("Query must not be blank.")
+
+        return normalized
 
 
 class RetrievedChunkResponse(BaseModel):

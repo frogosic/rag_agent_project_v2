@@ -3,7 +3,7 @@ import logging
 from typing import Any
 
 from rag.indexing.embedding_service import EmbeddingService
-from rag.indexing.qdrant_store import QdrantStore
+from rag.stores.qdrant_store import QdrantStore
 
 logger = logging.getLogger(__name__)
 

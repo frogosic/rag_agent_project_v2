@@ -3,10 +3,12 @@ from functools import lru_cache
 from pathlib import Path
 
 from fastapi import FastAPI
+from typing import Any
 
 from rag.api.schemas import AskRequest, AskResponse
 from rag.application.rag_service import RAGService
 from rag.application.run_store import RunStore
+from rag.api.errors import register_exception_handlers
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,8 @@ app = FastAPI(
     title="RAG Agent Project v2",
     version="0.1.0",
 )
+
+register_exception_handlers(app)
 
 
 @lru_cache(maxsize=1)
@@ -33,8 +37,14 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/ready")
+def ready() -> dict[str, Any]:
+    rag_service: RAGService = get_rag_service()
+    return rag_service.readiness_check()
+
+
 @app.post("/ask", response_model=AskResponse)
-def ask(request: AskRequest) -> dict:
+def ask(request: AskRequest) -> dict[str, Any]:
     logger.info("Received ask request: %s", request.query)
 
     rag_service: RAGService = get_rag_service()

@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from rag.indexing.qdrant_store import QdrantStore
+from rag.stores.qdrant_store import QdrantStore
 
 logger = logging.getLogger(__name__)
 

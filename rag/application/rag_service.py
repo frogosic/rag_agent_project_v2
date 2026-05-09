@@ -1,17 +1,31 @@
 import logging
 import uuid
-from typing import Any
 from datetime import datetime, timezone
+from typing import Any
 
+from rag.application.errors import (
+    EmptyRetrievalError,
+    GenerationError,
+    InvalidFiltersError,
+    RetrievalError,
+)
 from rag.generation.answer_service import AnswerService
 from rag.indexing.embedding_service import EmbeddingService
-from rag.indexing.qdrant_store import QdrantStore
+from rag.stores.qdrant_store import QdrantStore
 
 logger = logging.getLogger(__name__)
 
 
 class RAGService:
     """Application-level service for retrieval-augmented answering."""
+
+    _ALLOWED_FILTER_KEYS = {
+        "domain",
+        "doc_role",
+        "content_type",
+        "source",
+        "source_path",
+    }
 
     def __init__(
         self,
@@ -22,25 +36,20 @@ class RAGService:
         vector_name: str = "dense",
         qdrant_url: str = "http://localhost:6333",
     ) -> None:
-        self.embedding_service = embedding_service or EmbeddingService()
+        self.embedding_service: EmbeddingService = (
+            embedding_service or EmbeddingService()
+        )
 
-        probe_vector = self.embedding_service.embed_text("dimension probe")
+        probe_vector: list[float] = self.embedding_service.embed_text("dimension probe")
 
-        self.qdrant_store = qdrant_store or QdrantStore(
+        self.qdrant_store: QdrantStore = qdrant_store or QdrantStore(
             url=qdrant_url,
             collection_name=collection_name,
             vector_name=vector_name,
             vector_size=len(probe_vector),
         )
 
-        self.answer_service = answer_service or AnswerService()
-
-    @staticmethod
-    def _make_run_id() -> str:
-        """Create a traceable run ID for one RAG request."""
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        suffix = uuid.uuid4().hex[:8]
-        return f"ask_{timestamp}_{suffix}"
+        self.answer_service: AnswerService = answer_service or AnswerService()
 
     def answer(
         self,
@@ -50,24 +59,35 @@ class RAGService:
     ) -> dict[str, Any]:
         """Retrieve relevant chunks and generate a grounded answer."""
         filters = filters or {}
+        self._validate_filters(filters)
+
         run_id = self._make_run_id()
 
         logger.info("Running RAG query: %s", query)
         logger.info("top_k: %s", top_k)
         logger.info("filters: %s", filters)
 
-        query_vector = self.embedding_service.embed_text(query)
+        try:
+            query_vector: list[float] = self.embedding_service.embed_text(query)
 
-        retrieved_chunks = self.qdrant_store.search(
-            query_vector=query_vector,
-            limit=top_k,
-            filters=filters,
-        )
+            retrieved_chunks: list[dict[str, Any]] = self.qdrant_store.search(
+                query_vector=query_vector,
+                limit=top_k,
+                filters=filters,
+            )
+        except Exception as exc:
+            raise RetrievalError("Failed to retrieve chunks from Qdrant.") from exc
 
-        answer = self.answer_service.answer(
-            query=query,
-            retrieved_chunks=retrieved_chunks,
-        )
+        if not retrieved_chunks:
+            raise EmptyRetrievalError("Retrieval returned no chunks.")
+
+        try:
+            answer: str = self.answer_service.answer(
+                query=query,
+                retrieved_chunks=retrieved_chunks,
+            )
+        except Exception as exc:
+            raise GenerationError("Failed to generate grounded answer.") from exc
 
         return {
             "run_id": run_id,
@@ -79,6 +99,52 @@ class RAGService:
             "retrieved_chunks": self._format_retrieved_chunks(retrieved_chunks),
         }
 
+    def readiness_check(self) -> dict[str, Any]:
+        """Check whether required RAG dependencies are available."""
+        try:
+            qdrant_status: dict[str, Any] = self.qdrant_store.readiness_check()
+        except Exception as exc:
+            raise RetrievalError("Qdrant readiness check failed.") from exc
+
+        return {
+            "ready": qdrant_status["ready"],
+            "dependencies": {
+                "qdrant": qdrant_status,
+            },
+        }
+
+    def _validate_filters(self, filters: dict[str, Any]) -> None:
+        """Validate user-supplied metadata filters before retrieval."""
+        invalid_keys: set[str] = set(filters) - self._ALLOWED_FILTER_KEYS
+
+        if invalid_keys:
+            allowed_keys: str = ", ".join(sorted(self._ALLOWED_FILTER_KEYS))
+            invalid_keys_text: str = ", ".join(sorted(invalid_keys))
+
+            raise InvalidFiltersError(
+                f"Unsupported filter field(s): {invalid_keys_text}. "
+                f"Allowed fields: {allowed_keys}."
+            )
+
+        invalid_value_keys: list[str] = [
+            key for key, value in filters.items() if not isinstance(value, str)
+        ]
+
+        if invalid_value_keys:
+            invalid_values_text: str = ", ".join(sorted(invalid_value_keys))
+
+            raise InvalidFiltersError(
+                f"Unsupported filter value type for field(s): {invalid_values_text}. "
+                "Only string filter values are currently supported."
+            )
+
+    @staticmethod
+    def _make_run_id() -> str:
+        """Create a traceable run ID for one RAG request."""
+        timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        suffix: str = uuid.uuid4().hex[:8]
+        return f"ask_{timestamp}_{suffix}"
+
     @staticmethod
     def _format_retrieved_chunks(
         retrieved_chunks: list[dict[str, Any]],
@@ -87,7 +153,7 @@ class RAGService:
         formatted_chunks: list[dict[str, Any]] = []
 
         for index, result in enumerate(retrieved_chunks, start=1):
-            payload = result.get("payload") or {}
+            payload: dict[str, Any] = result.get("payload") or {}
 
             formatted_chunks.append(
                 {
