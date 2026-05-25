@@ -8,12 +8,13 @@ from typing import Any
 import yaml
 
 from rag.indexing.embedding_service import EmbeddingService
+from rag.retrieval.hybrid_retriever import HybridRetriever
 from rag.stores.qdrant_store import QdrantStore
+from rag.stores.sqlite_lexical_store import SQLiteLexicalStore
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_EVAL_PATH = Path("data/eval/retrieval_eval.yaml")
-DEFAULT_RESULTS_PATH = Path("data/eval/results/retrieval_eval_dense_with_filters.json")
 
 
 def parse_args() -> argparse.Namespace:
@@ -39,8 +40,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--results-path",
         type=Path,
-        default=DEFAULT_RESULTS_PATH,
+        default=None,
         help="Path where retrieval eval results should be written.",
+    )
+
+    parser.add_argument(
+        "--mode",
+        choices=["dense", "lexical", "hybrid_rrf"],
+        default="dense",
+        help="Retrieval mode to evaluate.",
     )
 
     return parser.parse_args()
@@ -89,6 +97,50 @@ def validate_case(case: dict[str, Any]) -> None:
             f"Eval case {case['id']} must define at least one of: "
             "expected.sources_any or expected.chunk_ids_any."
         )
+
+
+def retrieve_for_eval(
+    query: str,
+    filters: dict[str, Any],
+    top_k: int,
+    mode: str,
+    embedding_service: EmbeddingService,
+    qdrant_store: QdrantStore,
+    lexical_store: SQLiteLexicalStore,
+    hybrid_retriever: HybridRetriever,
+) -> list[dict[str, Any]]:
+    """Retrieve chunks for one eval case using the selected retrieval mode."""
+    if mode == "dense":
+        query_vector = embedding_service.embed_text(query)
+        results = qdrant_store.search(
+            query_vector=query_vector,
+            limit=top_k,
+            filters=filters,
+        )
+
+        return [
+            {
+                **result,
+                "retrieval_mode": "dense",
+            }
+            for result in results
+        ]
+
+    if mode == "lexical":
+        return lexical_store.search(
+            query=query,
+            limit=top_k,
+            filters=filters,
+        )
+
+    if mode == "hybrid_rrf":
+        return hybrid_retriever.search(
+            query=query,
+            limit=top_k,
+            filters=filters,
+        )
+
+    raise ValueError(f"Unsupported retrieval mode: {mode}")
 
 
 def get_result_sources(results: list[dict[str, Any]]) -> list[str]:
@@ -150,6 +202,7 @@ def limit_values(values: list[str], limit: int | None) -> list[str]:
 def evaluate_case(
     case: dict[str, Any],
     results: list[dict[str, Any]],
+    retrieval_mode: str = "dense_with_optional_filters",
 ) -> dict[str, Any]:
     """
     Evaluate a single case against retrieval results, returning a structured result.
@@ -197,14 +250,15 @@ def evaluate_case(
 
     warnings: list[str] = []
 
-    if (
-        min_top_score is not None
-        and top_score is not None
-        and top_score < min_top_score
-    ):
-        warnings.append(
-            f"top_score {top_score:.4f} is below min_top_score {min_top_score:.4f}"
-        )
+    if retrieval_mode == "dense":
+        if (
+            min_top_score is not None
+            and top_score is not None
+            and top_score < min_top_score
+        ):
+            warnings.append(
+                f"top_score {top_score:.4f} is below min_top_score {min_top_score:.4f}"
+            )
 
     if expected_chunk_ids:
         expected_hit = chunk_hit
@@ -439,11 +493,19 @@ def main() -> None:
 
     probe_vector = embedding_service.embed_text("dimension probe")
 
-    store = QdrantStore(
+    qdrant_store = QdrantStore(
         url="http://localhost:6333",
         collection_name="rag_chunks",
         vector_name="dense",
         vector_size=len(probe_vector),
+    )
+
+    lexical_store = SQLiteLexicalStore(db_path=Path("data/indexes/lexical.sqlite"))
+
+    hybrid_retriever = HybridRetriever(
+        embedding_service=embedding_service,
+        qdrant_store=qdrant_store,
+        lexical_store=lexical_store,
     )
 
     eval_results: list[dict[str, Any]] = []
@@ -451,28 +513,40 @@ def main() -> None:
     for case in cases:
         logger.info("Evaluating case: %s", case["id"])
 
-        query_vector = embedding_service.embed_text(case["query"])
+        filters = case.get("filters") or {}
 
-        filters = case.get("filters")
-
-        search_results = store.search(
-            query_vector=query_vector,
-            limit=args.top_k,
+        search_results = retrieve_for_eval(
+            query=case["query"],
             filters=filters,
+            top_k=args.top_k,
+            mode=args.mode,
+            embedding_service=embedding_service,
+            qdrant_store=qdrant_store,
+            lexical_store=lexical_store,
+            hybrid_retriever=hybrid_retriever,
         )
 
-        eval_result = evaluate_case(case, search_results)
+        eval_result = evaluate_case(
+            case=case,
+            results=search_results,
+            retrieval_mode=args.mode,
+        )
+        
         eval_results.append(eval_result)
         log_case_result(eval_result)
 
     summary = build_summary(eval_results)
     log_summary(summary)
 
+    results_path = args.results_path or Path(
+        f"data/eval/results/retrieval_eval_{args.mode}.json"
+    )
+
     write_results(
-        path=args.results_path,
+        path=results_path,
         summary=summary,
         results=eval_results,
-        retrieval_mode="dense_with_optional_filters",
+        retrieval_mode=args.mode,
         top_k=args.top_k,
     )
 

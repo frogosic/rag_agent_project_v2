@@ -23,6 +23,8 @@ class HybridRetriever:
         qdrant_url: str = "http://localhost:6333",
         lexical_db_path: Path = Path("data/indexes/lexical.sqlite"),
         rrf_k: int = 60,
+        dense_weight: float = 1.0,
+        lexical_weight: float = 0.6,
     ) -> None:
         self.embedding_service: EmbeddingService = (
             embedding_service or EmbeddingService()
@@ -42,6 +44,8 @@ class HybridRetriever:
         )
 
         self.rrf_k = rrf_k
+        self.dense_weight = dense_weight
+        self.lexical_weight = lexical_weight
 
     def search(
         self,
@@ -73,13 +77,17 @@ class HybridRetriever:
             filters=filters,
         )
 
-        fused_results: list[dict[str, Any]] = reciprocal_rank_fusion(
+        fused_results = reciprocal_rank_fusion(
             ranked_result_lists=[
                 dense_results,
                 lexical_results,
             ],
             k=self.rrf_k,
             limit=limit,
+            weights=[
+                self.dense_weight,
+                self.lexical_weight,
+            ],
         )
 
         logger.info(
