@@ -5,6 +5,8 @@ from typing import Any
 
 from rag.application.rag_service import RAGService
 from rag.application.run_store import RunStore
+from rag.retrieval.modes import DEFAULT_RETRIEVAL_MODE, SUPPORTED_RETRIEVAL_MODES
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,13 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=5,
         help="Number of retrieved chunks to use as context.",
+    )
+
+    parser.add_argument(
+        "--retrieval-mode",
+        choices=sorted(SUPPORTED_RETRIEVAL_MODES),
+        default=DEFAULT_RETRIEVAL_MODE,
+        help="Retrieval mode to use for context selection.",
     )
 
     parser.add_argument(
@@ -92,6 +101,7 @@ def main() -> None:
         query=args.query,
         top_k=args.top_k,
         filters=filters,
+        retrieval_mode=args.retrieval_mode,
     )
 
     run_store = RunStore(runs_dir=args.output_dir)

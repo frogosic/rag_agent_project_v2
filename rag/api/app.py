@@ -54,6 +54,7 @@ def ask(request: AskRequest) -> dict[str, Any]:
         query=request.query,
         top_k=request.top_k,
         filters=request.filters,
+        retrieval_mode=request.retrieval_mode,
     )
 
     output_path: Path = run_store.write_ask_run(result)

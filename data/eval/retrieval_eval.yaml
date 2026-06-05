@@ -85,3 +85,67 @@ cases:
         - auth_api_reference.md
 
     notes: 'Dense retrieval may underperform on exact endpoint syntax.'
+
+  - id: eval_007_exact_ticket_id_only
+    query: 'SUP-1108'
+    category: exact_identifier
+    expected:
+      sources_any:
+        - SUP-1108.txt
+      chunk_ids_any:
+        - chk_sec_doc_support_ticket_SUP-1108_4fbbe691a539_0000_section_0f516ad2f262_0000_0f516ad2f262
+    checks:
+      require_rank_lte: 1
+    notes: 'Exact support ticket identifier should retrieve the actual ticket, not only related runbook references.'
+
+  - id: eval_008_exact_env_var_refresh_ttl
+    query: 'AUTH_REFRESH_TOKEN_TTL'
+    category: exact_identifier
+    expected:
+      sources_any:
+        - auth_configuration.md
+    checks:
+      require_rank_lte: 1
+    notes: 'Exact environment variable lookup should prefer auth configuration.'
+
+  - id: eval_009_exact_error_phrase_kid_not_found
+    query: 'kid not found'
+    category: exact_error_phrase
+    expected:
+      sources_any:
+        - SUP-1108.txt
+        - auth_troubleshooting_runbook.txt
+    checks:
+      require_rank_lte: 2
+    notes: 'Exact error phrase appears in the incident and related troubleshooting guidance.'
+
+  - id: eval_010_exact_redis_eviction_policy
+    query: 'allkeys-lru'
+    category: exact_identifier
+    expected:
+      sources_any:
+        - SUP-1156.txt
+        - auth_troubleshooting_runbook.txt
+    checks:
+      require_rank_lte: 2
+    notes: 'Exact Redis eviction policy should retrieve the session-storage incident or related runbook section.'
+
+  - id: eval_011_exact_endpoint_token
+    query: 'POST /auth/token'
+    category: exact_endpoint
+    expected:
+      sources_any:
+        - auth_api_reference.md
+    checks:
+      require_rank_lte: 2
+    notes: 'Exact endpoint lookup should retrieve the API reference.'
+
+  - id: eval_012_exact_endpoint_logout
+    query: 'POST /auth/logout'
+    category: exact_endpoint
+    expected:
+      sources_any:
+        - auth_api_reference.md
+    checks:
+      require_rank_lte: 2
+    notes: 'Exact endpoint lookup should retrieve the API reference.'

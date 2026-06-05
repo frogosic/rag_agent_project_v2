@@ -12,6 +12,8 @@ from rag.application.errors import (
 from rag.generation.answer_service import AnswerService
 from rag.indexing.embedding_service import EmbeddingService
 from rag.stores.qdrant_store import QdrantStore
+from rag.retrieval.hybrid_retriever import HybridRetriever
+from rag.retrieval.modes import DEFAULT_RETRIEVAL_MODE, RetrievalMode
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,7 @@ class RAGService:
         embedding_service: EmbeddingService | None = None,
         qdrant_store: QdrantStore | None = None,
         answer_service: AnswerService | None = None,
+        hybrid_retriever: HybridRetriever | None = None,
         collection_name: str = "rag_chunks",
         vector_name: str = "dense",
         qdrant_url: str = "http://localhost:6333",
@@ -51,11 +54,51 @@ class RAGService:
 
         self.answer_service: AnswerService = answer_service or AnswerService()
 
+        self.hybrid_retriever: HybridRetriever = hybrid_retriever or HybridRetriever(
+            embedding_service=self.embedding_service,
+            qdrant_store=self.qdrant_store,
+        )
+
+    def _retrieve(
+        self,
+        query: str,
+        top_k: int,
+        filters: dict[str, Any],
+        retrieval_mode: RetrievalMode,
+    ) -> list[dict[str, Any]]:
+        """Retrieve chunks using the selected retrieval mode."""
+        if retrieval_mode == "dense":
+            query_vector: list[float] = self.embedding_service.embed_text(query)
+
+            results = self.qdrant_store.search(
+                query_vector=query_vector,
+                limit=top_k,
+                filters=filters,
+            )
+
+            return [
+                {
+                    **result,
+                    "retrieval_mode": "dense",
+                }
+                for result in results
+            ]
+
+        if retrieval_mode == "hybrid_rrf":
+            return self.hybrid_retriever.search(
+                query=query,
+                limit=top_k,
+                filters=filters,
+            )
+
+        raise ValueError(f"Unsupported retrieval mode: {retrieval_mode}")
+
     def answer(
         self,
         query: str,
         top_k: int = 5,
         filters: dict[str, Any] | None = None,
+        retrieval_mode: RetrievalMode = DEFAULT_RETRIEVAL_MODE,
     ) -> dict[str, Any]:
         """Retrieve relevant chunks and generate a grounded answer."""
         filters = filters or {}
@@ -66,17 +109,17 @@ class RAGService:
         logger.info("Running RAG query: %s", query)
         logger.info("top_k: %s", top_k)
         logger.info("filters: %s", filters)
+        logger.info("retrieval_mode: %s", retrieval_mode)
 
         try:
-            query_vector: list[float] = self.embedding_service.embed_text(query)
-
-            retrieved_chunks: list[dict[str, Any]] = self.qdrant_store.search(
-                query_vector=query_vector,
-                limit=top_k,
+            retrieved_chunks = self._retrieve(
+                query=query,
+                top_k=top_k,
                 filters=filters,
+                retrieval_mode=retrieval_mode,
             )
         except Exception as exc:
-            raise RetrievalError("Failed to retrieve chunks from Qdrant.") from exc
+            raise RetrievalError("Failed to retrieve chunks.") from exc
 
         if not retrieved_chunks:
             raise EmptyRetrievalError("Retrieval returned no chunks.")
@@ -94,7 +137,7 @@ class RAGService:
             "query": query,
             "filters": filters,
             "top_k": top_k,
-            "retrieval_mode": "dense_with_optional_filters",
+            "retrieval_mode": retrieval_mode,
             "answer": answer,
             "retrieved_chunks": self._format_retrieved_chunks(retrieved_chunks),
         }

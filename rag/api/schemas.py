@@ -2,6 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from rag.retrieval.modes import DEFAULT_RETRIEVAL_MODE, RetrievalMode
+
 
 class AskRequest(BaseModel):
     query: str = Field(
@@ -17,6 +19,10 @@ class AskRequest(BaseModel):
     filters: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional metadata filters applied during retrieval.",
+    )
+    retrieval_mode: RetrievalMode = Field(
+        default=DEFAULT_RETRIEVAL_MODE,
+        description="Retrieval mode used to select context chunks.",
     )
 
     @field_validator("query")
@@ -49,6 +55,6 @@ class AskResponse(BaseModel):
     query: str
     filters: dict[str, Any]
     top_k: int
-    retrieval_mode: str
+    retrieval_mode: RetrievalMode
     answer: str
     retrieved_chunks: list[RetrievedChunkResponse]
