@@ -29,14 +29,11 @@ class HybridRetriever:
         self.embedding_service: EmbeddingService = (
             embedding_service or EmbeddingService()
         )
-
-        probe_vector: list[float] = self.embedding_service.embed_text("dimension probe")
-
         self.qdrant_store: QdrantStore = qdrant_store or QdrantStore(
             url=qdrant_url,
             collection_name=collection_name,
             vector_name=vector_name,
-            vector_size=len(probe_vector),
+            vector_size=self.embedding_service.dimension,
         )
 
         self.lexical_store: SQLiteLexicalStore = lexical_store or SQLiteLexicalStore(
@@ -55,6 +52,7 @@ class HybridRetriever:
         candidate_limit: int | None = None,
     ) -> list[dict[str, Any]]:
         """Run dense and lexical retrieval, then fuse results with RRF."""
+
         filters = filters or {}
         candidate_limit = candidate_limit or max(limit * 3, 10)
 
@@ -106,6 +104,7 @@ class HybridRetriever:
         filters: dict[str, Any],
     ) -> list[dict[str, Any]]:
         """Run dense vector retrieval."""
+
         query_vector: list[float] = self.embedding_service.embed_text(query)
 
         results: list[dict[str, Any]] = self.qdrant_store.search(
@@ -129,6 +128,7 @@ class HybridRetriever:
         filters: dict[str, Any],
     ) -> list[dict[str, Any]]:
         """Run SQLite FTS lexical retrieval."""
+
         return self.lexical_store.search(
             query=query,
             limit=limit,

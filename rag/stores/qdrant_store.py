@@ -19,16 +19,15 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_COLLECTION_NAME = "rag_chunks"
 DEFAULT_VECTOR_NAME = "dense"
-DEFAULT_VECTOR_SIZE = 384
 
 
 class QdrantStore:
     def __init__(
         self,
+        vector_size: int,
         url: str = "http://localhost:6333",
         collection_name: str = DEFAULT_COLLECTION_NAME,
         vector_name: str = DEFAULT_VECTOR_NAME,
-        vector_size: int = DEFAULT_VECTOR_SIZE,
     ) -> None:
         self.client = QdrantClient(url=url)
         self.collection_name: str = collection_name
@@ -68,6 +67,7 @@ class QdrantStore:
         embedded_chunks: List[dict[str, Any]],
         batch_size: int = 64,
     ) -> int:
+        """Upsert embedded chunks into Qdrant in batches. Returns the total number of upserted chunks."""
         total = 0
 
         for start in range(0, len(embedded_chunks), batch_size):
@@ -105,6 +105,8 @@ class QdrantStore:
         }
 
     def _chunk_to_point(self, chunk: dict[str, Any]) -> PointStruct:
+        """Convert an embedded chunk dictionary into a Qdrant PointStruct for upserting."""
+
         chunk_id = chunk["id"]
         embedding = chunk["embedding"]
 
@@ -137,6 +139,8 @@ class QdrantStore:
 
     @staticmethod
     def _build_payload(chunk: dict[str, Any]) -> dict[str, Any]:
+        """Build the payload dictionary for a chunk, flattening metadata fields to the top level."""
+
         metadata = chunk.get("metadata", {})
 
         return {
@@ -157,6 +161,8 @@ class QdrantStore:
 
     @staticmethod
     def _build_filter(filters: dict[str, Any] | None) -> Filter | None:
+        """Convert user-supplied metadata filters into a Qdrant Filter object. Returns None if no filters are provided."""
+
         if not filters:
             return None
 
@@ -176,6 +182,8 @@ class QdrantStore:
         limit: int = 5,
         filters: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
+        """Search Qdrant with the query vector and optional metadata filters. Returns a list of matching points with their scores and payloads."""
+
         if len(query_vector) != self.vector_size:
             raise ValueError(
                 f"Query vector dimension mismatch. "

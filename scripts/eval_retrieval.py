@@ -1,7 +1,6 @@
 import argparse
 import logging
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -14,13 +13,11 @@ from rag.stores.qdrant_store import QdrantStore
 from rag.stores.sqlite_lexical_store import SQLiteLexicalStore
 from rag.retrieval.reranker import CrossEncoderReranker
 from rag.retrieval.reranker_config import DEFAULT_RERANKER_MODEL_NAME
+from rag.retrieval.reranked_hybrid_retriever import RerankedHybridRetriever
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_EVAL_PATH = Path("data/eval/retrieval_eval.yaml")
-_EXACT_LOOKUP_PATTERN = re.compile(
-    r"^([A-Z0-9_./:-]+|[A-Z]+\s+/[a-z0-9_./:-]+|[a-z0-9_.:-]+)$"
-)
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,15 +102,6 @@ def validate_case(case: dict[str, Any]) -> None:
         )
 
 
-def is_exact_lookup_query(query: str) -> bool:
-    stripped = query.strip()
-
-    if not stripped:
-        return False
-
-    return bool(_EXACT_LOOKUP_PATTERN.fullmatch(stripped))
-
-
 def retrieve_for_eval(
     query: str,
     filters: dict[str, Any],
@@ -156,29 +144,20 @@ def retrieve_for_eval(
         ), {"rerank_applied": False}
 
     if mode == "hybrid_rrf_rerank":
-        hybrid_retriever = HybridRetriever(
-            qdrant_store=qdrant_store,
-            lexical_store=lexical_store,
-        )
-
-        candidates = hybrid_retriever.search(
-            query=query,
-            limit=max(top_k * 3, 10),
-            filters=filters,
-        )
-
-        if is_exact_lookup_query(query):
-            return candidates[:top_k], {"rerank_applied": False}
-
         reranker = CrossEncoderReranker(
             model_name=DEFAULT_RERANKER_MODEL_NAME,
         )
 
-        return reranker.rerank(
+        reranked_retriever = RerankedHybridRetriever(
+            hybrid_retriever=hybrid_retriever,
+            reranker=reranker,
+        )
+
+        return reranked_retriever.search(
             query=query,
-            candidates=candidates,
             limit=top_k,
-        ), {"rerank_applied": True}
+            filters=filters,
+        )
 
     raise ValueError(f"Unsupported retrieval mode: {mode}")
 

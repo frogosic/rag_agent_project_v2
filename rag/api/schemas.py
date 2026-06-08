@@ -26,7 +26,6 @@ class AskRequest(BaseModel):
     )
 
     @field_validator("query")
-    @classmethod
     def validate_query(cls, value: str) -> str:
         normalized = value.strip()
 
@@ -56,5 +55,6 @@ class AskResponse(BaseModel):
     filters: dict[str, Any]
     top_k: int
     retrieval_mode: RetrievalMode
+    retrieval_debug: dict[str, Any] = Field(default_factory=dict)
     answer: str
     retrieved_chunks: list[RetrievedChunkResponse]

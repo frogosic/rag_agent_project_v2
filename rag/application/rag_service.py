@@ -14,6 +14,9 @@ from rag.indexing.embedding_service import EmbeddingService
 from rag.stores.qdrant_store import QdrantStore
 from rag.retrieval.hybrid_retriever import HybridRetriever
 from rag.retrieval.modes import DEFAULT_RETRIEVAL_MODE, RetrievalMode
+from rag.retrieval.reranked_hybrid_retriever import RerankedHybridRetriever
+from rag.retrieval.reranker import CrossEncoderReranker
+from rag.retrieval.reranker_config import DEFAULT_RERANKER_MODEL_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +68,7 @@ class RAGService:
         top_k: int,
         filters: dict[str, Any],
         retrieval_mode: RetrievalMode,
-    ) -> list[dict[str, Any]]:
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         """Retrieve chunks using the selected retrieval mode."""
         if retrieval_mode == "dense":
             query_vector: list[float] = self.embedding_service.embed_text(query)
@@ -82,14 +85,32 @@ class RAGService:
                     "retrieval_mode": "dense",
                 }
                 for result in results
-            ]
+            ], {"rerank_applied": False}
 
         if retrieval_mode == "hybrid_rrf":
             return self.hybrid_retriever.search(
                 query=query,
                 limit=top_k,
                 filters=filters,
+            ), {"rerank_applied": False}
+
+        if retrieval_mode == "hybrid_rrf_rerank":
+            reranker = CrossEncoderReranker(
+                model_name=DEFAULT_RERANKER_MODEL_NAME,
             )
+
+            reranked_retriever = RerankedHybridRetriever(
+                hybrid_retriever=self.hybrid_retriever,
+                reranker=reranker,
+            )
+
+            results, retrieval_debug = reranked_retriever.search(
+                query=query,
+                limit=top_k,
+                filters=filters,
+            )
+
+            return results, retrieval_debug
 
         raise ValueError(f"Unsupported retrieval mode: {retrieval_mode}")
 
@@ -112,7 +133,7 @@ class RAGService:
         logger.info("retrieval_mode: %s", retrieval_mode)
 
         try:
-            retrieved_chunks = self._retrieve(
+            retrieved_chunks, retrieval_debug = self._retrieve(
                 query=query,
                 top_k=top_k,
                 filters=filters,
@@ -138,6 +159,7 @@ class RAGService:
             "filters": filters,
             "top_k": top_k,
             "retrieval_mode": retrieval_mode,
+            "retrieval_debug": retrieval_debug,
             "answer": answer,
             "retrieved_chunks": self._format_retrieved_chunks(retrieved_chunks),
         }

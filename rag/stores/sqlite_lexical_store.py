@@ -24,6 +24,7 @@ class SQLiteLexicalStore:
         chunks_path: Path = Path("data/processed/chunks.jsonl"),
     ) -> None:
         """Rebuild the lexical index from persisted chunks."""
+
         if not chunks_path.exists():
             raise FileNotFoundError(f"Chunks file not found: {chunks_path}")
 
